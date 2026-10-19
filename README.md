@@ -1,0 +1,1 @@
+Screenshots for pull request #1 (the Residents and apartments view). Rendered from the built view with the built-in Porttavlan tokens, light and dark, against stubbed routes holding fictional data. Not part of the code.
