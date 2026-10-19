@@ -124,7 +124,9 @@ const styles = {
     alignItems: "center",
     gap: "0.5rem",
   },
+  // At least 44px tall, the smallest touch target the design system allows.
   toggle: {
+    minHeight: "44px",
     padding: "0.25rem 0.75rem",
     font: "inherit",
     fontSize: "0.8125rem",
@@ -185,6 +187,10 @@ function GroupTable({ group }: { group: ApartmentGroup }): ReactElement {
         ? t("view.floorUnknown")
         : t("view.floor", { floor: group.floor });
 
+  // Under a floor the apartments of every address meet, and a number is only
+  // unique per address, so each row says which address it belongs to.
+  const showAddress = group.kind === "floor";
+
   return (
     <table style={styles.table}>
       <caption style={styles.caption}>{caption}</caption>
@@ -193,6 +199,11 @@ function GroupTable({ group }: { group: ApartmentGroup }): ReactElement {
           <th scope="col" style={styles.th}>
             {t("view.column.apartment")}
           </th>
+          {showAddress ? (
+            <th scope="col" style={styles.th}>
+              {t("view.column.address")}
+            </th>
+          ) : null}
           <th scope="col" style={styles.th}>
             {t("view.column.residents")}
           </th>
@@ -215,9 +226,12 @@ function GroupTable({ group }: { group: ApartmentGroup }): ReactElement {
             >
               {apartment.number}
             </th>
+            {showAddress ? (
+              <td style={styles.td}>{apartment.address}</td>
+            ) : null}
             <td style={{ ...styles.td, ...styles.data }}>
               {apartment.residents === 0 ? (
-                <span style={styles.nobody}>{t("view.nobodyRegistered")}</span>
+                <span style={styles.nobody}>{t("view.noneVisible")}</span>
               ) : (
                 apartment.residents
               )}
@@ -281,7 +295,8 @@ function ApartmentList(): ReactElement {
             <p style={styles.attention}>
               {t("view.withoutResidents", {
                 count: list.data.withoutResidents,
-              })}
+              })}{" "}
+              {t("view.withoutResidentsNote")}
             </p>
           ) : null}
           {list.data.groups.map((group) => (

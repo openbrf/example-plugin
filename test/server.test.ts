@@ -1,3 +1,4 @@
+import type { PluginApartment } from "@openbrf/plugin-sdk";
 import { describe, expect, it } from "vitest";
 import { listApartments, readSettings } from "../src/server";
 import { APARTMENTS, RESIDENTS } from "./fake-host";
@@ -73,6 +74,7 @@ describe("listApartments", () => {
     expect(storgatan?.apartments).toEqual([
       {
         id: "apt-1101",
+        address: "Storgatan 12",
         number: "1101",
         floor: 1,
         residents: 3,
@@ -80,6 +82,7 @@ describe("listApartments", () => {
       },
       {
         id: "apt-1102",
+        address: "Storgatan 12",
         number: "1102",
         floor: 1,
         residents: 0,
@@ -87,6 +90,7 @@ describe("listApartments", () => {
       },
       {
         id: "apt-1201",
+        address: "Storgatan 12",
         number: "1201",
         floor: 2,
         residents: 1,
@@ -109,6 +113,34 @@ describe("listApartments", () => {
       "floor:none",
     ]);
     expect(list.groups[2]).toMatchObject({ kind: "floor", floor: null });
+  });
+
+  it("tells apart apartments that share a number and a floor at different addresses", () => {
+    const first: PluginApartment = {
+      id: "apt-a",
+      number: "1101",
+      floor: 1,
+      address: { id: "addr-1", street: "Storgatan", number: "12" },
+    };
+    const second: PluginApartment = {
+      id: "apt-b",
+      number: "1101",
+      floor: 1,
+      address: { id: "addr-2", street: "Lillgatan", number: "3" },
+    };
+
+    const list = listApartments([first, second], [], {
+      grouping: "floor",
+      rowLimit: 100,
+    });
+
+    expect(list.groups).toHaveLength(1);
+    expect(
+      list.groups[0]?.apartments.map((row) => [row.number, row.address]),
+    ).toEqual([
+      ["1101", "Lillgatan 3"],
+      ["1101", "Storgatan 12"],
+    ]);
   });
 
   it("cuts the floor grouping at rowLimit in floor order", () => {

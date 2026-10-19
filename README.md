@@ -15,8 +15,12 @@ things:
   many members;
 - the apartments listed by address or by floor, with how many people are
   registered as living in each and how many of them hold the tenant-ownership.
-  An apartment with nobody registered is marked. It may stand empty, or the
-  register may lack the people who live there.
+  An apartment with no resident the plugin can see is marked. It may stand
+  empty, the register may lack the people who live there, or the people who
+  live there may be ones the host never hands to a plugin (see below), so the
+  mark is a prompt to look, not a finding that the apartment is empty. Under the
+  floor grouping each row also gives its address, because an apartment number
+  is only unique per address.
 
 The board sets four things in the plugin's settings: a heading of its own,
 whether the member count shows, the grouping the list opens with, and how many
@@ -60,8 +64,8 @@ is the reference. This is where this package meets each part of it.
 
 ## Building and testing
 
-You need Node 26 and pnpm 12. `corepack enable` gives you the pnpm version
-pinned in `package.json`.
+You need Node 26 and pnpm (`npm i -g pnpm`). Any recent pnpm switches itself to
+the version pinned in `package.json` inside this repository.
 
 ```sh
 pnpm install

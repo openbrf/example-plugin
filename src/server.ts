@@ -73,6 +73,8 @@ export interface SummaryResponse {
  */
 export interface ApartmentRow {
   id: string;
+  /** Street and number, because an apartment number is only unique per address. */
+  address: string;
   number: string;
   floor: number | null;
   /** Distinct people whose residency on the apartment is in force. */
@@ -102,7 +104,11 @@ export interface ApartmentsResponse {
   grouping: Grouping;
   /** Every apartment in the register. */
   total: number;
-  /** Apartments with nobody registered as living there. */
+  /**
+   * Apartments with no resident the plugin was given. The host leaves out
+   * people with protected personal data and people whose processing is
+   * restricted, so this is not a count of empty apartments.
+   */
   withoutResidents: number;
   /** How many of the apartments the groups hold, at most `rowLimit`. */
   shown: number;
@@ -203,6 +209,7 @@ export function listApartments(
     apartment,
     row: {
       id: apartment.id,
+      address: `${apartment.address.street} ${apartment.address.number}`,
       number: apartment.number,
       floor: apartment.floor,
       residents: living.get(apartment.id)?.size ?? 0,

@@ -64,6 +64,7 @@ function apartments(grouping: "address" | "floor"): ApartmentsResponse {
             apartments: [
               {
                 id: "1",
+                address: "Storgatan 12",
                 number: "1101",
                 floor: 1,
                 residents: 3,
@@ -71,6 +72,7 @@ function apartments(grouping: "address" | "floor"): ApartmentsResponse {
               },
               {
                 id: "2",
+                address: "Storgatan 12",
                 number: "1102",
                 floor: 1,
                 residents: 0,
@@ -93,6 +95,7 @@ function apartments(grouping: "address" | "floor"): ApartmentsResponse {
             apartments: [
               {
                 id: "1",
+                address: "Storgatan 12",
                 number: "1101",
                 floor: 1,
                 residents: 3,
@@ -107,6 +110,7 @@ function apartments(grouping: "address" | "floor"): ApartmentsResponse {
             apartments: [
               {
                 id: "3",
+                address: "Lillgatan 3",
                 number: "1001",
                 floor: null,
                 residents: 1,
@@ -168,11 +172,12 @@ describe("the view", () => {
     expect(rows.map((row) => row.textContent)).toEqual([
       "LägenhetBoendeBostadsrättshavare",
       "110132",
-      "1102Ingen registrerad0",
+      "1102Inga synliga0",
     ]);
     expect(
-      screen.getByText("1 lägenhet har ingen registrerad som boende."),
+      screen.getByText(/^1 lägenhet har inga boende som tillägget kan se\./),
     ).toBeTruthy();
+    expect(screen.getByText(/inte nödvändigtvis tom\./)).toBeTruthy();
     expect(screen.getByText("Visar 2 av 3 lägenheter.")).toBeTruthy();
     expect(
       screen.getByRole("button", { name: "Adress", pressed: true }),
@@ -190,6 +195,12 @@ describe("the view", () => {
     expect(
       screen.getByRole("table", { name: "Våning inte angiven" }),
     ).toBeTruthy();
+    // An apartment number is unique per address only, so each row names it.
+    expect(
+      within(screen.getByRole("table", { name: "Våning 1" }))
+        .getAllByRole("row")
+        .map((row) => row.textContent),
+    ).toEqual(["LägenhetAdressBoendeBostadsrättshavare", "1101Storgatan 1232"]);
     expect(
       screen.getByRole("button", { name: "Våning", pressed: true }),
     ).toBeTruthy();
@@ -197,6 +208,16 @@ describe("the view", () => {
       "/api/plugin/occupancy/apartments?grouping=floor",
       expect.objectContaining({ credentials: "same-origin" }),
     );
+  });
+
+  it("gives the grouping buttons a touch target of at least 44px", async () => {
+    serve();
+    show();
+    await screen.findByRole("table", { name: "Storgatan 12" });
+
+    for (const name of ["Adress", "Våning"]) {
+      expect(screen.getByRole("button", { name }).style.minHeight).toBe("44px");
+    }
   });
 
   it("uses the board's heading and leaves members out when the settings say so", async () => {
@@ -231,7 +252,7 @@ describe("the view", () => {
       expect(
         await screen.findByRole("table", { name: "Storgatan 12" }),
       ).toBeTruthy();
-      expect(screen.getByText("Nobody registered")).toBeTruthy();
+      expect(screen.getByText("None visible")).toBeTruthy();
     } finally {
       await i18n.changeLanguage("sv");
     }
