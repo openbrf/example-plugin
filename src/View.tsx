@@ -227,7 +227,9 @@ function GroupTable({ group }: { group: ApartmentGroup }): ReactElement {
               {apartment.number}
             </th>
             {showAddress ? (
-              <td style={styles.td}>{apartment.address}</td>
+              <td style={{ ...styles.td, ...styles.data }}>
+                {apartment.address}
+              </td>
             ) : null}
             <td style={{ ...styles.td, ...styles.data }}>
               {apartment.residents === 0 ? (

@@ -201,6 +201,10 @@ describe("the view", () => {
         .getAllByRole("row")
         .map((row) => row.textContent),
     ).toEqual(["LägenhetAdressBoendeBostadsrättshavare", "1101Storgatan 1232"]);
+    // The address is register data like the counts beside it.
+    expect(
+      screen.getByRole("cell", { name: "Storgatan 12" }).style.fontFamily,
+    ).toBe("var(--obrf-font-data)");
     expect(
       screen.getByRole("button", { name: "Våning", pressed: true }),
     ).toBeTruthy();
