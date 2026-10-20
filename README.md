@@ -99,9 +99,11 @@ The licence is MIT-0, so you can copy any of it without keeping a notice.
    `useTranslation` reads in the view.
 2. Rename the package and start your version at `0.1.0`.
 3. Declare only what your code uses. The board sees `permissions`,
-   `personalData` and `actions` on the consent screen before anything is
-   downloaded, and a later version that asks for more is refused until the
-   board consents again.
+   `personalData`, `actions` and `processing` on the consent screen before
+   anything is downloaded, and a later version that asks for more is refused
+   until the board consents again. `processing` says why the plugin handles
+   personal data: its purpose, legal basis, retention and whose data it is, in
+   Swedish and English.
 4. Keep the server in one file, or bundle it into one. Keep `@nestjs/common`,
    `@nestjs/core` and `zod` as peer dependencies and never bundle them, and
    import `@openbrf/plugin-sdk` for types only. The package check refuses any
