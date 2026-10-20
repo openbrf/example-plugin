@@ -1,11 +1,24 @@
-import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 /**
  * Holds the release workflow to its split: a job that can sign an
  * attestation (`id-token: write`) installs and runs none of the lockfile's
  * packages, so code that runs at build time never holds the token that signs.
+ * It also runs the check that stands between the build's tarball and the
+ * attestation, so a check that no longer stops the job fails here.
  */
 
 type Permissions = string | Record<string, string> | undefined;
@@ -67,6 +80,98 @@ function splitProblems(workflow: Workflow): string[] {
     }
   }
   return problems;
+}
+
+/**
+ * Runs the publish job's check of the downloaded tarball the way the runner
+ * does (`bash -e` on the step's script) in a directory of its own, with the
+ * `release` directory the download leaves and the two build outputs the
+ * workflow hands it through the environment.
+ */
+interface CheckRun {
+  status: number | null;
+  output: string;
+  /** What the check appended to `GITHUB_ENV`: the `TARBALL` and `SHA512` the later steps read. */
+  env: string;
+}
+
+const scratch: string[] = [];
+
+/** The `base64` of the runner, where `-w0` is GNU's: macOS and BSD take no such option. */
+let base64Dir: string | undefined;
+
+beforeAll(() => {
+  const gnu = spawnSync("base64", ["-w0"], { input: "x" });
+  if (gnu.status === 0) {
+    return;
+  }
+  const real = spawnSync("sh", ["-c", "command -v base64"], {
+    encoding: "utf8",
+  }).stdout.trim();
+  base64Dir = mkdtempSync(join(tmpdir(), "base64-"));
+  scratch.push(base64Dir);
+  const shim = join(base64Dir, "base64");
+  // BSD base64 never wraps its output, which is what `-w0` asks of GNU's.
+  writeFileSync(
+    shim,
+    `#!/bin/sh\nif [ "$1" = "-w0" ]; then shift; fi\nexec '${real}' "$@"\n`,
+  );
+  chmodSync(shim, 0o755);
+});
+
+afterEach(() => {
+  for (const dir of scratch.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+function sha512Of(bytes: Buffer): string {
+  return `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
+}
+
+function runTarballCheck(options: {
+  /** The files the download leaves in `release`, by name. */
+  files: Record<string, Buffer>;
+  /** The tarball name the build reports. */
+  builtTarball: string;
+  /** The sha512 the build reports. */
+  builtSha512: string;
+}): CheckRun {
+  const steps = workflow.jobs.publish?.steps ?? [];
+  const script = steps.find(
+    (step) => step.env?.BUILT_SHA512 !== undefined,
+  )?.run;
+  if (script === undefined) {
+    throw new Error("the publish job has no check of the downloaded tarball");
+  }
+  const dir = mkdtempSync(join(tmpdir(), "release-check-"));
+  scratch.push(dir);
+  mkdirSync(join(dir, "release"));
+  for (const [name, bytes] of Object.entries(options.files)) {
+    writeFileSync(join(dir, "release", name), bytes);
+  }
+  const scriptPath = join(dir, "check.sh");
+  writeFileSync(scriptPath, script);
+  const githubEnv = join(dir, "github-env");
+  writeFileSync(githubEnv, "");
+
+  const result = spawnSync("bash", ["-e", scriptPath], {
+    cwd: dir,
+    encoding: "utf8",
+    // Nothing of this process's environment: on a runner it would hold the
+    // real `GITHUB_ENV`.
+    env: {
+      PATH: [base64Dir, process.env.PATH].filter(Boolean).join(":"),
+      GITHUB_ENV: githubEnv,
+      BUILT_TARBALL: options.builtTarball,
+      BUILT_SHA512: options.builtSha512,
+    },
+  });
+  return {
+    status: result.status,
+    output: result.stdout + result.stderr,
+    env: readFileSync(githubEnv, "utf8"),
+  };
 }
 
 const workflow = parse(
@@ -194,5 +299,88 @@ describe("the release workflow", () => {
       "job publish can sign attestations and runs node_modules",
       "job publish can sign attestations and runs node_modules",
     ]);
+  });
+
+  describe("the check of the downloaded tarball", () => {
+    const name = "openbrf-example-plugin-0.1.0.tgz";
+    const bytes = Buffer.from("the tarball the build packed");
+    const digest = sha512Of(bytes);
+
+    it("passes the tarball the build packed and hands its path and sha512 on", () => {
+      const run = runTarballCheck({
+        files: { [name]: bytes },
+        builtTarball: name,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(0);
+      expect(run.env).toBe(`TARBALL=release/${name}\nSHA512=${digest}\n`);
+    });
+
+    it("stops on a sha512 other than the build's", () => {
+      const run = runTarballCheck({
+        files: { [name]: Buffer.from("a tarball swapped in after the build") },
+        builtTarball: name,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(1);
+      expect(run.output).toContain("::error::The downloaded tarball's sha512");
+      expect(run.env).toBe("");
+    });
+
+    it("stops on an extra file next to the tarball", () => {
+      const run = runTarballCheck({
+        files: { [name]: bytes, "extra.txt": Buffer.from("not built") },
+        builtTarball: name,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(1);
+      expect(run.output).toContain("holds other files");
+      expect(run.env).toBe("");
+    });
+
+    it("stops on an extra hidden file, which `ls` without -A would not list", () => {
+      const run = runTarballCheck({
+        files: { [name]: bytes, ".hidden": Buffer.from("not built") },
+        builtTarball: name,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(1);
+      expect(run.env).toBe("");
+    });
+
+    it("stops when the artifact does not hold the tarball the build named", () => {
+      const run = runTarballCheck({
+        files: { "other-0.1.0.tgz": bytes },
+        builtTarball: name,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(1);
+      expect(run.output).toContain("holds other files");
+      expect(run.env).toBe("");
+    });
+
+    it.each([
+      ["a path up a directory", "../escape.tgz"],
+      ["a path into a subdirectory", "sub/plugin.tgz"],
+      ["a command substitution", "$(touch pwned).tgz"],
+      ["a name without the .tgz ending", "plugin.tar"],
+      ["a name that starts with a dash", "-plugin.tgz"],
+      ["empty", ""],
+    ])("stops on a tarball name that is %s, before it reads any file", (_, built) => {
+      const run = runTarballCheck({
+        files: { [name]: bytes },
+        builtTarball: built,
+        builtSha512: digest,
+      });
+
+      expect(run.status).toBe(1);
+      expect(run.output).toContain("is not a tarball's file name");
+      expect(run.env).toBe("");
+    });
   });
 });
