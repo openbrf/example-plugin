@@ -10,7 +10,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { parse } from "yaml";
 
 /**
@@ -97,7 +97,11 @@ interface CheckRun {
 
 const scratch: string[] = [];
 
-/** The `base64` of the runner, where `-w0` is GNU's: macOS and BSD take no such option. */
+/**
+ * The `base64` of the runner, where `-w0` is GNU's: macOS and BSD take no such
+ * option. It lives for the whole suite and is removed in `afterAll`, apart
+ * from the per-test directories in `scratch`.
+ */
 let base64Dir: string | undefined;
 
 beforeAll(() => {
@@ -109,7 +113,6 @@ beforeAll(() => {
     encoding: "utf8",
   }).stdout.trim();
   base64Dir = mkdtempSync(join(tmpdir(), "base64-"));
-  scratch.push(base64Dir);
   const shim = join(base64Dir, "base64");
   // BSD base64 never wraps its output, which is what `-w0` asks of GNU's.
   writeFileSync(
@@ -122,6 +125,13 @@ beforeAll(() => {
 afterEach(() => {
   for (const dir of scratch.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+afterAll(() => {
+  if (base64Dir !== undefined) {
+    rmSync(base64Dir, { recursive: true, force: true });
+    base64Dir = undefined;
   }
 });
 
