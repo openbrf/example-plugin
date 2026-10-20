@@ -123,9 +123,13 @@ The licence is MIT-0, so you can copy any of it without keeping a notice.
    ```
 
 3. The release workflow checks that the tag matches the version and points at
-   a commit on `main`. It then builds, tests, packs, checks and attests the
-   tarball, and publishes the release with the tarball attached. The release
-   notes give the tarball's `sha512` and `bytes`.
+   a commit on `main`. Its `build` job then builds, tests, packs and checks
+   the tarball with read access only. Its `publish` job, which installs and
+   runs none of the lockfile's packages, holds the tarball to the `sha512` the
+   build packed, attests it and publishes the release with the tarball
+   attached. Code that runs at build time therefore never holds the token that
+   signs an attestation. The release notes give the tarball's `sha512` and
+   `bytes`, and the `gh attestation verify` command the catalog runs.
 
 Do not create the release in the GitHub interface. That creates the tag
 first, so the workflow starts after the release is already immutable, and the
