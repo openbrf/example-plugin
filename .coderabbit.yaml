@@ -69,7 +69,7 @@ reviews:
     # The code comments why a thing exists, not what the next line does. A
     # coverage threshold would push reviews toward the second kind.
     docstrings:
-      mode: off
+      mode: "off"
 
   path_filters:
     # Generated: reviewing these produces noise, not findings.
