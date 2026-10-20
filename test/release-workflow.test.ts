@@ -11,7 +11,10 @@ import { parse } from "yaml";
 type Permissions = string | Record<string, string> | undefined;
 
 interface Step {
+  name?: string;
   uses?: string;
+  with?: Record<string, string>;
+  env?: Record<string, string>;
   run?: string;
 }
 
@@ -31,9 +34,11 @@ const SETUP_ACTIONS = ["pnpm/action-setup", "actions/setup-node"];
 
 /**
  * A command that installs or runs what the lockfile holds, also when it is
- * named by its path (`/usr/bin/node`).
+ * named by its path (`/usr/bin/node`) or is an executable of the installed
+ * packages (`./node_modules/.bin/vitest`).
  */
-const DEPENDENCY_COMMAND = /(^|[\s;&|(`$/])(pnpm|npm|npx|yarn|corepack|node)\b/m;
+const DEPENDENCY_COMMAND =
+  /(^|[\s;&|(`$/])(pnpm|npm|npx|yarn|corepack|node_modules|node)\b/m;
 
 function mintsTokens(permissions: Permissions): boolean {
   if (typeof permissions === "string") {
@@ -85,6 +90,34 @@ describe("the release workflow", () => {
       attestations: "write",
     });
     expect(publish).toMatchObject({ needs: "build" });
+  });
+
+  it("attests only the tarball the build checked, and refuses any other", () => {
+    const steps = workflow.jobs.publish?.steps ?? [];
+    const download = steps.find((step) =>
+      step.uses?.startsWith("actions/download-artifact@"),
+    );
+    expect(download?.with).toMatchObject({ name: "tarball", path: "release" });
+
+    const check = steps.find((step) => step.env?.BUILT_SHA512 !== undefined);
+    expect(check?.env).toEqual({
+      BUILT_TARBALL: "${{ needs.build.outputs.tarball }}",
+      BUILT_SHA512: "${{ needs.build.outputs.sha512 }}",
+    });
+    // The outputs are read as data, never interpolated into the script.
+    expect(check?.run).not.toContain("${{");
+    expect(check?.run).toContain("openssl dgst -sha512");
+    expect(check?.run).toContain('!= "${BUILT_SHA512}"');
+    expect(check?.run).toContain('!= "${BUILT_TARBALL}"');
+
+    const attest = steps.find((step) =>
+      step.uses?.startsWith("actions/attest-build-provenance@"),
+    );
+    expect(attest?.with).toEqual({ "subject-path": "${{ env.TARBALL }}" });
+    // The check runs before the tarball is attested.
+    expect(steps.indexOf(check as Step)).toBeLessThan(
+      steps.indexOf(attest as Step),
+    );
   });
 
   it("installs and runs none of the lockfile's packages in a job that can sign attestations", () => {
@@ -140,6 +173,26 @@ describe("the release workflow", () => {
 
     expect(splitProblems(pathed)).toEqual([
       "job publish can sign attestations and runs node",
+    ]);
+  });
+
+  it("refuses a job that runs an executable of the installed packages", () => {
+    const local: Workflow = {
+      permissions: {},
+      jobs: {
+        publish: {
+          permissions: { "id-token": "write" },
+          steps: [
+            { run: "./node_modules/.bin/vitest run" },
+            { run: "node_modules/.bin/tsc" },
+          ],
+        },
+      },
+    };
+
+    expect(splitProblems(local)).toEqual([
+      "job publish can sign attestations and runs node_modules",
+      "job publish can sign attestations and runs node_modules",
     ]);
   });
 });
