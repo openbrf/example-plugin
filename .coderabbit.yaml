@@ -124,10 +124,10 @@ reviews:
     - path: "src/server.ts"
       instructions: >-
         This file is the whole server: the host requires one CommonJS bundle
-        that requires nothing but @nestjs/common, zod and Node's built-in
-        modules. Flag an import that would become a relative require or a
-        require of another package, and a value import from
-        @openbrf/plugin-sdk.
+        that requires nothing but the host's packages (@nestjs/common,
+        @nestjs/core and zod) and Node's built-in modules. Flag an import that
+        would become a relative require or a require of another package, and a
+        value import from @openbrf/plugin-sdk.
 
         Everything the plugin uses at runtime arrives on the host object. Flag
         a call to a host service the manifest does not ask for, and a use of a
