@@ -287,7 +287,10 @@ knowledge_base:
       instructions: >-
         The curated catalog that lists this plugin. Its README states what a
         listed release must meet and what its maintainers read in a plugin's
-        server bundle before approving it.
+        server bundle before approving it. Its checks build the SDK from the
+        core commit pinned as CORE_REF in .github/workflows/check.yml and run
+        that revision's pluginPackageProblems, so a contract change on the
+        core's main branch is not enforced by the catalog until CORE_REF moves.
   # Keep what it learns to this repository rather than sharing it wider.
   learnings:
     scope: local
