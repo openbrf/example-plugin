@@ -102,10 +102,16 @@ reviews:
     - path: "package.json"
       instructions: >-
         The "openbrf" field is the manifest, and the board consents to its
-        permissions, personalData, actions and recipients before anything is
-        downloaded. A later version that asks for more is refused until the
-        board consents again. Flag a declaration the code does not use, and
-        code that uses something the manifest does not declare.
+        permissions, personalData and actions before anything is downloaded.
+        A later version that asks for more is refused until the board consents
+        again. Flag a declaration the code does not use, and code that uses
+        something the manifest does not declare.
+
+        The manifest cannot say where personal data goes. The install screen
+        asks the board that, and this plugin's answer is that it sends none
+        outside the instance. Flag any new manifest field that claims to
+        declare a destination for personal data: the plugin contract defines
+        none.
 
         The package declares no runtime dependencies: @nestjs/common,
         @nestjs/core and zod are peer dependencies the host provides, and
@@ -134,10 +140,14 @@ reviews:
 
         The browser receives counts, not people: flag a response that would
         carry a resident's name or any other personal data, and personal data
-        written to a log, an error message or an exception. A connection
-        outside the instance is made only to a declared recipient and only
-        through host.recipients.fetch, never by a raw fetch, http or https
-        request. The catalog's maintainers read the bundle for exactly this.
+        written to a log, an error message or an exception. This plugin sends
+        no personal data outside the instance, which is what the board is told
+        at install. Flag any outbound network call (fetch, http, https, net,
+        a socket or a third-party client) that carries personal data, and
+        any outbound call at all that is not explained in the pull request,
+        because the answer given at install would no longer be true. Do not
+        suggest a host transport service as a fix; the plugin contract has
+        none. The catalog's maintainers read the bundle for exactly this.
 
         Settings are read on every request so a change the board saves applies
         at once; flag a setting cached past the request.
