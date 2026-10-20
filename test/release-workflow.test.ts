@@ -29,8 +29,11 @@ interface Workflow {
 /** Actions that install a package manager or a Node to run dependencies with. */
 const SETUP_ACTIONS = ["pnpm/action-setup", "actions/setup-node"];
 
-/** A command that installs or runs what the lockfile holds. */
-const DEPENDENCY_COMMAND = /(^|[\s;&|(`$])(pnpm|npm|npx|yarn|corepack|node)\b/m;
+/**
+ * A command that installs or runs what the lockfile holds, also when it is
+ * named by its path (`/usr/bin/node`).
+ */
+const DEPENDENCY_COMMAND = /(^|[\s;&|(`$/])(pnpm|npm|npx|yarn|corepack|node)\b/m;
 
 function mintsTokens(permissions: Permissions): boolean {
   if (typeof permissions === "string") {
@@ -74,9 +77,13 @@ describe("the release workflow", () => {
     expect(workflow.jobs.build?.permissions).toEqual({ contents: "read" });
   });
 
-  it("attests in a job that needs the build", () => {
+  it("publishes with exactly the three write scopes, in a job that needs the build", () => {
     const publish = workflow.jobs.publish;
-    expect(mintsTokens(publish?.permissions)).toBe(true);
+    expect(publish?.permissions).toEqual({
+      contents: "write",
+      "id-token": "write",
+      attestations: "write",
+    });
     expect(publish).toMatchObject({ needs: "build" });
   });
 
@@ -116,6 +123,22 @@ describe("the release workflow", () => {
     };
 
     expect(splitProblems(inherited)).toEqual([
+      "job publish can sign attestations and runs node",
+    ]);
+  });
+
+  it("refuses a job that runs node by its path", () => {
+    const pathed: Workflow = {
+      permissions: {},
+      jobs: {
+        publish: {
+          permissions: { "id-token": "write" },
+          steps: [{ run: "/usr/bin/node scripts/check-package.mjs" }],
+        },
+      },
+    };
+
+    expect(splitProblems(pathed)).toEqual([
       "job publish can sign attestations and runs node",
     ]);
   });
