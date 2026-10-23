@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0
+
+- A `processing` declaration in the manifest: the purpose, the legal basis
+  (legitimate interest, with the interest stated), how long the data is kept
+  (it is not kept) and whose data it is (members and residents). The board
+  reads it on the consent screen, and a person can object to this processing
+  on its own. Version 0.1.0 was released without it.
+- Nothing else changes: the view, the settings and the `summary` action are as
+  in 0.1.0.
+
 ## 0.1.0
 
 The first release.
@@ -17,9 +27,4 @@ The first release.
 - One action, `summary`, which returns the three counts and names nobody,
   offered on the platform's own screens and, once an administrator arms it, to
   connected apps.
-- A `processing` declaration in the manifest: the purpose, the legal basis
-  (legitimate interest, with the interest stated), how long the data is kept
-  (it is not kept) and whose data it is (members and residents). The board
-  reads it on the consent screen, and a person can object to this processing
-  on its own.
 - Swedish and English.
