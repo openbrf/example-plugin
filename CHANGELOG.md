@@ -17,4 +17,9 @@ The first release.
 - One action, `summary`, which returns the three counts and names nobody,
   offered on the platform's own screens and, once an administrator arms it, to
   connected apps.
+- A `processing` declaration in the manifest: the purpose, the legal basis
+  (legitimate interest, with the interest stated), how long the data is kept
+  (it is not kept) and whose data it is (members and residents). The board
+  reads it on the consent screen, and a person can object to this processing
+  on its own.
 - Swedish and English.
