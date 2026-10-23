@@ -1,6 +1,6 @@
 {
   "name": "@openbrf/example-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Reference Open BRF plugin: how many apartments, residents and members the association has, and which apartments have no resident the plugin can see.",
   "license": "MIT-0",
   "type": "module",

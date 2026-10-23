@@ -105,7 +105,9 @@ The licence is MIT-0, so you can copy any of it without keeping a notice.
    anything is downloaded, and a later version that asks for more is refused
    until the board consents again. `processing` says why the plugin handles
    personal data: its purpose, legal basis, retention and whose data it is, in
-   Swedish and English.
+   Swedish and English. It comes with ADR 0035: an instance that predates it,
+   and `@openbrf/plugin-sdk` 1.0.0, ignore the field, so `pnpm check:package`
+   does not check it yet.
 4. Keep the server in one file, or bundle it into one. Keep `@nestjs/common`
    and `zod` as peer dependencies and never bundle them, and
    import `@openbrf/plugin-sdk` for types only. The package check refuses any
