@@ -50,7 +50,7 @@ is the reference. This is where this package meets each part of it.
 
 | Part          | Here                                                                                                                                                                               |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Manifest      | The `openbrf` field of [`package.json`](package.json): id, entries, permission, personal data, view, settings (all four field types) and the action.                               |
+| Manifest      | The `openbrf` field of [`package.json`](package.json): id, entries, permission, personal data, processing, view, settings (all four field types) and the action.                   |
 | Server entry  | [`src/server.ts`](src/server.ts), compiled by `tsc` to `dist/server.cjs`: one CommonJS file that requires only `@nestjs/common` and `zod`, which resolve to the host's own copies. |
 | NestJS module | A provider with an `onModuleInit` hook, and a controller whose two routes the host mounts at `/api/plugin/occupancy/summary` and `/api/plugin/occupancy/apartments`.               |
 | Route input   | `GET apartments` takes one query parameter, read with the host's zod. Anything else is answered with 400.                                                                          |
@@ -87,7 +87,9 @@ The tests cover four things:
   against every key the manifest, the view and the action name.
 
 A Module Federation remote cannot be served by `vite dev`. To try the view in a
-running instance, run `vite build --watch` and install the package there.
+running instance, run `vite build --watch`, then `pnpm build:server` once the
+first build has finished, and install the package there. The view build empties
+`dist/`, so without the second step the package has no server bundle.
 
 ## Starting your own plugin from this one
 
@@ -104,8 +106,8 @@ The licence is MIT-0, so you can copy any of it without keeping a notice.
    until the board consents again. `processing` says why the plugin handles
    personal data: its purpose, legal basis, retention and whose data it is, in
    Swedish and English.
-4. Keep the server in one file, or bundle it into one. Keep `@nestjs/common`,
-   `@nestjs/core` and `zod` as peer dependencies and never bundle them, and
+4. Keep the server in one file, or bundle it into one. Keep `@nestjs/common`
+   and `zod` as peer dependencies and never bundle them, and
    import `@openbrf/plugin-sdk` for types only. The package check refuses any
    runtime dependency, and a bundle that requires another package or a
    relative path.
@@ -139,8 +141,9 @@ tarball cannot be attached.
 
 To have a version listed, open a pull request in
 [`openbrf/catalog`](https://github.com/openbrf/catalog) that adds its entry
-with the release's tarball URL, `sha512` and `bytes`. Copy the declaration from
-the manifest exactly: the catalog's check compares the two.
+with the release's tarball URL, `sha512` and `bytes`. Copy the fields the
+catalog checks from the manifest exactly: the catalog's check compares them. It
+does not compare `processing` yet.
 
 ## Licence
 
