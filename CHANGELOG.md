@@ -4,9 +4,13 @@
 
 - A `processing` declaration in the manifest: the purpose, the legal basis
   (legitimate interest, with the interest stated), how long the data is kept
-  (it is not kept) and whose data it is (members and residents). The board
-  reads it on the consent screen, and a person can object to this processing
-  on its own. Version 0.1.0 was released without it.
+  (it is not kept) and whose data it is (members and residents), as ADR 0035
+  of Open BRF defines it. An instance that implements ADR 0035 shows it to the
+  board on the consent screen and lets a person object to this processing on
+  its own. An earlier instance, and `@openbrf/plugin-sdk` 1.0.0, which this
+  version is built and checked against, ignore the field, so the plugin
+  installs and works there as 0.1.0 does. Version 0.1.0 was released without
+  it.
 - Nothing else changes: the view, the settings and the `summary` action are as
   in 0.1.0.
 
