@@ -144,8 +144,9 @@ tarball cannot be attached.
 To have a version listed, open a pull request in
 [`openbrf/catalog`](https://github.com/openbrf/catalog) that adds its entry
 with the release's tarball URL, `sha512` and `bytes`. Copy the fields the
-catalog checks from the manifest exactly: the catalog's check compares them. It
-does not compare `processing` yet.
+catalog checks from the manifest exactly: the catalog's check compares them.
+That includes `processing`, which the entry repeats whole; only the order of
+its data subjects may differ.
 
 ## Licence
 
