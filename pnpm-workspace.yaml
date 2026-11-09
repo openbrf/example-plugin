@@ -1,10 +1,7 @@
 # Makes this directory a pnpm workspace root, so an install here reads this
 # file's settings and nothing above it. None of it is part of the plugin: an
 # instance installs the packed tarball, which declares no dependencies.
-
-# `@module-federation/dts-plugin` pins undici 7.29.1 exactly, which has eight
-# published advisories (GHSA-2m5v-pch6-74hx and seven more), fixed in 7.30.1.
-# Scoped to that parent, so nothing else is overridden. Drop this once the
-# plugin's own pin is 7.30.1 or newer.
-overrides:
-  '@module-federation/dts-plugin>undici': 7.30.1
+#
+# Add an `overrides` entry here, scoped to the parent that pins it, when a
+# development dependency pins a release with a published advisory.
+packages: []
