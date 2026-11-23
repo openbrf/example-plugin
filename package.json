@@ -12,7 +12,7 @@
   "bugs": {
     "url": "https://github.com/openbrf/example-plugin/issues"
   },
-  "packageManager": "pnpm@12.21.0",
+  "packageManager": "pnpm@12.23.0",
   "engines": {
     "node": ">=26"
   },
